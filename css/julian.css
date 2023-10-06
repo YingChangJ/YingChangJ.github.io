@@ -1,0 +1,19 @@
+#dateForm input {
+  width: 90px;
+}
+
+.tjdForm input {
+  width: 180px;
+}
+
+.tjd {
+  display: flex;
+  gap: 10px;
+}
+
+.tjd .tjd-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
