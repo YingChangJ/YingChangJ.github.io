@@ -12,7 +12,14 @@ clearBtn.addEventListener("click", function () {
 
 inputDMS.forEach((input, idx) => {
   input.addEventListener("input", (e) => {
-    if (idx < 14 && (e.target.value >= 6 || e.target.value.length === 2)) {
+    if (
+      idx < 14 &&
+      idx % 3 !== 0 &&
+      (e.target.value >= 6 || e.target.value.length === 2)
+    ) {
+      setTimeout(() => inputDMS[idx + 1].focus(), 10);
+    }
+    if (idx % 3 === 0 && (e.target.value >= 3 || e.target.value.length === 2)) {
       setTimeout(() => inputDMS[idx + 1].focus(), 10);
     }
   });
@@ -191,26 +198,26 @@ function convertChartDateTime(sun, moon, saturn) {
   return result;
 }
 
-//for test purpose
-inputDMS[0].value = 25;
-inputDMS[1].value = 55;
-inputDMS[2].value = 0;
-select[0].selectedIndex = 3;
+// //for test purpose
+// inputDMS[0].value = 25;
+// inputDMS[1].value = 55;
+// inputDMS[2].value = 0;
+// select[0].selectedIndex = 3;
 
-inputDMS[3].value = 6;
-inputDMS[4].value = 3;
-inputDMS[5].value = 0;
-select[1].selectedIndex = 6;
+// inputDMS[3].value = 6;
+// inputDMS[4].value = 3;
+// inputDMS[5].value = 0;
+// select[1].selectedIndex = 6;
 
-inputDMS[6].value = 22;
-inputDMS[7].value = 47;
-inputDMS[8].value = 0;
-select[2].selectedIndex = 5;
+// inputDMS[6].value = 22;
+// inputDMS[7].value = 47;
+// inputDMS[8].value = 0;
+// select[2].selectedIndex = 5;
 
-inputDMS[9].value = 7;
-inputDMS[10].value = 36;
-select[3].selectedIndex = 9;
+// inputDMS[9].value = 7;
+// inputDMS[10].value = 36;
+// select[3].selectedIndex = 9;
 
-inputDMS[12].value = 2;
-inputDMS[13].value = 52;
-select[4].selectedIndex = 7;
+// inputDMS[12].value = 2;
+// inputDMS[13].value = 52;
+// select[4].selectedIndex = 7;

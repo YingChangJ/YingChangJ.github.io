@@ -99,3 +99,9 @@ ul {
 ol li {
   text-align: start;
 }
+@media (max-width: 767px) {
+  /* 手机样式 */
+  form {
+    padding: 15px;
+  }
+}
