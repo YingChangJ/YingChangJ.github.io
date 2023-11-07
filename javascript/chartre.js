@@ -27,6 +27,7 @@ inputDMS.forEach((input, idx) => {
 
 possibleDates.addEventListener("click", function () {
   let emptyFound = false;
+  // const startTime = performance.now();
   Array.from(inputDMS)
     .slice(0, 9)
     .forEach((input) => {
@@ -128,6 +129,9 @@ possibleDates.addEventListener("click", function () {
     li.textContent = "Nothing found.";
     ul.appendChild(li);
   }
+  // const endTime = performance.now();
+  // const executionTime = endTime - startTime;
+  // console.log("Your function took " + executionTime + " milliseconds to run");
 });
 
 function convertChartDateTime(sun, moon, saturn) {
