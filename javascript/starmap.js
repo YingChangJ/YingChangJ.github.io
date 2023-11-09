@@ -1,5 +1,6 @@
 "using strict";
-
+import { DateTime } from "./luxon.js";
+import * as Astronomy from "./astronomy.js";
 //reconstruct from the work of Thomas Boch
 const DRAWING_OPTIONS = [
   "drawequatorofdate",
@@ -10,7 +11,9 @@ const DRAWING_OPTIONS = [
   "drawconst",
   "drawconstname",
   "drawstars",
+  "drawplanetname",
 ];
+const GRID_OPTIONS = ["gridEclipticOfDate", "gridEquatorOfDate", "gridHorizon"];
 const BodyList = [
   "Sun",
   "Moon",
@@ -26,7 +29,12 @@ const BodyList = [
 const Position = ["longitude", "latitude", "elevation"];
 // Model
 class AstronomyModel {
-  constructor(datetime, longitude = 0, latitude = 0, elevation = 0) {
+  constructor(
+    datetime = new Date(),
+    longitude = 0,
+    latitude = 0,
+    elevation = 0
+  ) {
     // Initialize the model's data
     this.colorValues = [
       "#9bb2ff",
@@ -91,20 +99,65 @@ class AstronomyModel {
     this.lon0Rad = (longitude * Math.PI) / 180.0;
     //star map's center's lat
     this.lat0Rad = (latitude * Math.PI) / 180.0;
-    // //view's starmap radius
-    // this.radius = radius;
     // The grid using
-    this.observer = new Astronomy.Observer(
-      Number(latitude),
-      Number(longitude),
-      Number(elevation)
-    );
+    this.observer = new Astronomy.Observer(latitude, longitude, elevation);
     this.rotStarToGrid = Astronomy.Rotation_EQJ_EQD(this.datetime);
     this.rotEclipticToGrid = Astronomy.Rotation_ECT_EQD(this.datetime);
-    // this.rotEquatorToGrid = null;
+    this.rotEquatorToGrid = null;
     // this.rotHorizonToGrid = Astronomy.Rotation_HOR_EQD(this.datetime);
+    this.gridType = "gridEclipticOfDate";
+    const rotsToGrid = [
+      "rotStarToGrid",
+      "rotEclipticToGrid",
+      "rotEquatorToGrid",
+      "rotHorizonToGrid",
+    ];
+    this.rot = {};
+    const sharedDict = {};
+    for (const optionToGrid of rotsToGrid) {
+      sharedDict[optionToGrid] = null;
+    }
+    for (const gridTypeOption of GRID_OPTIONS) {
+      this.rot[gridTypeOption] = { ...sharedDict };
+    }
+    this.rot.gridEclipticOfDate.rotEclipticToGrid = null;
+    this.rot.gridEquatorOfDate.rotEquatorToGrid = null;
+    this.rot.gridHorizon.rotHorizonToGrid = null;
+    this.updateRots();
   }
+  //with this.datetime change
+  updateRots() {
+    const rotEQJ_EQD = Astronomy.Rotation_EQJ_EQD(this.datetime);
+    const rotEQD_ECT = Astronomy.Rotation_EQD_ECT(this.datetime);
+    const rotECT_EQD = Astronomy.InverseRotation(rotEQD_ECT);
 
+    this.rot.gridEclipticOfDate.rotEquatorToGrid = rotEQD_ECT;
+    this.rot.gridEclipticOfDate.rotStarToGrid = Astronomy.CombineRotation(
+      rotEQJ_EQD,
+      rotEQD_ECT
+    );
+    this.rot.gridEquatorOfDate.rotEclipticToGrid = rotECT_EQD;
+    this.rot.gridEquatorOfDate.rotStarToGrid = rotEQJ_EQD;
+    this.updateRotsHor();
+  }
+  //with only this.observer change
+  updateRotsHor() {
+    const rotEQD_HOR = Astronomy.Rotation_EQD_HOR(this.datetime, this.observer);
+    this.rot.gridHorizon.rotEclipticToGrid = Astronomy.CombineRotation(
+      this.rot.gridEquatorOfDate.rotEclipticToGrid,
+      rotEQD_HOR
+    );
+    this.rot.gridEclipticOfDate.rotHorizonToGrid = Astronomy.InverseRotation(
+      this.rot.gridHorizon.rotEclipticToGrid
+    );
+    this.rot.gridHorizon.rotStarToGrid = Astronomy.CombineRotation(
+      this.rot.gridEquatorOfDate.rotStarToGrid,
+      rotEQD_HOR
+    );
+    this.rot.gridHorizon.rotEquatorToGrid = rotEQD_HOR;
+    this.rot.gridEquatorOfDate.rotHorizonToGrid =
+      Astronomy.InverseRotation(rotEQD_HOR);
+  }
   // Add model's data processing and calculation methods
   colorFromB_V(bv) {
     if (bv < this.colorLimits[0]) return this.colorValues[0];
@@ -135,13 +188,13 @@ class AstronomyModel {
   }
   /**
    *
-   * @param {*} s star
-   * @returns star position on view
+   * @param {number} lon
+   * @param {number} lat
+   * @returns position [x, y]
    */
-  cooToXY(s) {
-    if (!s) return;
-    const lonRad = (s.ra * Math.PI) / 180.0;
-    const latRad = (s.dec * Math.PI) / 180.0;
+  cooToXY(lon, lat) {
+    const lonRad = (lon * Math.PI) / 180.0;
+    const latRad = (lat * Math.PI) / 180.0;
     const cosc =
       Math.sin(this.lat0Rad) * Math.sin(latRad) +
       Math.cos(this.lat0Rad) *
@@ -158,6 +211,14 @@ class AstronomyModel {
         Math.cos(lonRad - this.lon0Rad);
     return [x, y];
   }
+  isMouseMoveDirection(y) {
+    const northPole = this.cooToXY(0, 90);
+    const southPole = this.cooToXY(0, -90);
+    if (northPole) return y < northPole[1];
+    else if (southPole) return y > southPole[1];
+    else return Math.abs(this.lat0Rad % 360) < 10;
+  }
+
   // Add other model methods
   positionPlanet(body) {
     const equ_2000 = Astronomy.Equator(
@@ -167,29 +228,36 @@ class AstronomyModel {
       false,
       true
     );
-    const equ_ofdate = Astronomy.Equator(
-      body,
-      this.datetime,
-      this.observer,
-      true,
-      true
+    const vector = Astronomy.RotateVector(
+      this.rot[this.gridType].rotStarToGrid,
+      equ_2000.vec
     );
-    const hor = Astronomy.Horizon(
-      this.datetime,
-      this.observer,
-      equ_ofdate.ra,
-      equ_ofdate.dec,
-      "normal"
-    );
-    const illumi = Astronomy.Illumination(body, this.datetime); //TODO: repeated in calculation?
-    // console.log(body);
-    // console.log(illumi);
-    return { coordination: equ_ofdate, illumination: illumi };
+    const spherical = Astronomy.SphereFromVector(vector);
+    const illumi = Astronomy.Illumination(body, this.datetime);
+    return { coordination: spherical, illumination: illumi };
   }
-  positionEcliptic(eclLon) {
-    const sphericalECT = new Astronomy.Spherical(0, eclLon, 1);
-    const vectorECT = Astronomy.VectorFromSphere(sphericalECT, this.datetime);
-    const vector = Astronomy.RotateVector(this.rotEclipticToGrid, vectorECT);
+  positionCircle(rotationMatrix, lon) {
+    if (this.rot[this.gridType][rotationMatrix]) {
+      const spherical = new Astronomy.Spherical(0, lon, 100000);
+      const vector = Astronomy.VectorFromSphere(spherical, this.datetime);
+      const rotatedVector = Astronomy.RotateVector(
+        this.rot[this.gridType][rotationMatrix],
+        vector
+      );
+      const resultSpherical = Astronomy.SphereFromVector(rotatedVector);
+      return resultSpherical;
+    } else {
+      return { lon, lat: 0 };
+    }
+  }
+
+  positionStar(eqjLon, eqjLat) {
+    const sphericalEQJ = new Astronomy.Spherical(eqjLat, eqjLon, 100000);
+    const vectorEQJ = Astronomy.VectorFromSphere(sphericalEQJ, this.datetime);
+    const vector = Astronomy.RotateVector(
+      this.rot[this.gridType].rotStarToGrid,
+      vectorEQJ
+    );
     const spherical = Astronomy.SphereFromVector(vector);
     return spherical;
   }
@@ -202,8 +270,6 @@ class AstronomyView {
    * @param {AstronomyModel} model
    */
   constructor(model) {
-    const canvas = document.getElementById("canvas");
-    this.ctx = canvas.getContext("2d");
     // Initialize other view-related elements and listeners here
     this.drawingOptions = {};
     //a copy of the options.
@@ -226,35 +292,52 @@ class AstronomyView {
   // Add view drawing methods
   doDraw() {
     this.ctx.clearRect(0, 0, this.width, this.height);
-    this.ctx.fillStyle = "rgb(0,0,0)";
+    this.ctx.fillStyle = "black";
     this.ctx.beginPath();
     this.ctx.arc(this.cx, this.cy, this.radius, 0, 2 * Math.PI, true);
     this.ctx.fill();
-    if (this.drawingOptions["drawconst"]) {
-      this.drawConstellations();
+    if (this.drawingOptions.drawconst) {
+      this.drawconst();
     }
-
-    if (this.drawingOptions["drawconstname"]) {
-      this.drawConstellationsNames();
+    if (this.drawingOptions.drawconstname) {
+      this.drawconstname();
     }
-    if (this.drawingOptions["drawstars"]) {
-      this.drawStars();
+    if (this.drawingOptions.drawstars) {
+      this.drawstars();
     }
-    if (this.drawingOptions["drawgrid"]) {
-      this.drawGrid();
+    if (this.drawingOptions.drawgrid) {
+      this.drawgrid();
     }
-    if (this.drawingOptions["drawplanets"]) {
-      this.drawPlanets();
+    if (this.drawingOptions.drawplanets) {
+      this.drawplanets();
     }
-    if (this.drawingOptions["draweclipticofdate"]) {
-      this.drawEcliptic();
+    if (this.drawingOptions.draweclipticofdate) {
+      this.drawCircle("yellow", "rotEclipticToGrid");
     }
+    if (this.drawingOptions.drawequatorofdate) {
+      this.drawCircle("blue", "rotEquatorToGrid");
+    }
+    if (this.drawingOptions.drawhorizon) {
+      this.drawCircle("white", "rotHorizonToGrid", true);
+    }
+    if (this.drawingOptions.drawplanetname) {
+      this.drawplanetname();
+    }
+    // why not work?
+    // for (const key in this.drawingOptions) {
+    //   if (this.drawingOptions.hasOwnProperty(key)) {
+    //     if (value) {
+    //       this[key]();
+    //     }
+    //   }
+    // }
   }
-  drawStars() {
+  drawstars() {
     for (let i = 1603; i >= 0; i--) {
       //Reduce the 9100 star map to 1603 stars, only vmag < 5
       const s = stars[i];
-      const xy = this.model.cooToXY(s);
+      const pos = this.model.positionStar(s.ra, s.dec);
+      const xy = this.model.cooToXY(pos.lon, pos.lat);
       if (xy) {
         this.ctx.beginPath();
         this.ctx.fillStyle = this.model.colorFromB_V(s.bv);
@@ -270,21 +353,23 @@ class AstronomyView {
       }
     }
   }
-  drawConstellations() {
+  drawconst() {
     this.ctx.strokeStyle = "rgba(100,100,200, 0.5)";
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     for (let i = 0; i < constellations.length; i++) {
       const constalation = constellations[i];
       for (let j = 0; j < constalation.lines.length; j++) {
-        const l1 = this.model.cooToXY({
-          ra: constalation.lines[j][0],
-          dec: constalation.lines[j][1],
-        });
-        const l2 = this.model.cooToXY({
-          ra: constalation.lines[j][2],
-          dec: constalation.lines[j][3],
-        });
+        const pos1 = this.model.positionStar(
+          constalation.lines[j][0],
+          constalation.lines[j][1]
+        );
+        const pos2 = this.model.positionStar(
+          constalation.lines[j][2],
+          constalation.lines[j][3]
+        );
+        const l1 = this.model.cooToXY(pos1.lon, pos1.lat);
+        const l2 = this.model.cooToXY(pos2.lon, pos2.lat);
         if (l1 && l2) {
           this.ctx.moveTo(
             this.cx - this.radius * l1[0],
@@ -300,7 +385,7 @@ class AstronomyView {
     this.ctx.stroke();
     //ctx.restore();
   }
-  drawConstellationsNames() {
+  drawconstname() {
     //this.ctx.save();
     this.ctx.beginPath();
     this.ctx.fillStyle = "rgba(230,120,250, 0.5)";
@@ -308,10 +393,14 @@ class AstronomyView {
 
     for (var i = 0; i < constellations.length; i++) {
       const constellation = constellations[i];
-      const xy_raw = this.model.cooToXY({
-        ra: constellation.namera,
-        dec: constellation.namedec,
-      });
+      const posConstellation = this.model.positionStar(
+        constellation.namera,
+        constellation.namedec
+      );
+      const xy_raw = this.model.cooToXY(
+        posConstellation.lon,
+        posConstellation.lat
+      );
       if (xy_raw) {
         this.ctx.fillText(
           constellation.name,
@@ -323,7 +412,7 @@ class AstronomyView {
     this.ctx.stroke();
     //ctx.restore();
   }
-  drawGrid() {
+  drawgrid() {
     this.ctx.strokeStyle = "rgba(100,200,100, 0.5)";
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = "white";
@@ -333,10 +422,7 @@ class AstronomyView {
     for (let ra = 0; ra < 360; ra += 20) {
       ox = oy = null;
       for (let dec = -90; dec <= 90; dec = dec + 5) {
-        const xy_raw = this.model.cooToXY({
-          ra: ra,
-          dec: dec,
-        });
+        const xy_raw = this.model.cooToXY(ra, dec);
         const xy = xy_raw
           ? xy_raw.map((number) => -number * this.radius)
           : null;
@@ -363,10 +449,7 @@ class AstronomyView {
         }
       }
       //text of grid (lon)
-      const xy_raw = this.model.cooToXY({
-        ra: ra,
-        dec: 0,
-      });
+      const xy_raw = this.model.cooToXY(ra, 0);
       const xy = xy_raw ? xy_raw.map((number) => -number * this.radius) : null;
       if (xy && this.ctx.fillText) {
         this.ctx.fillText(ra, this.cx + xy[0], this.cy + xy[1]);
@@ -375,18 +458,12 @@ class AstronomyView {
 
     for (let dec = -90; dec <= 90; dec += 20) {
       ox = oy = null;
-      const gg_raw = this.model.cooToXY({
-        ra: raIdx,
-        dec: dec,
-      });
+      const gg_raw = this.model.cooToXY(raIdx, dec);
       const gg = gg_raw ? gg_raw.map((number) => -number * this.radius) : null;
       if (gg && this.ctx.fillText)
         this.ctx.fillText(dec, this.cx + gg[0], this.cy + gg[1]);
       for (let ra = 0; ra <= 360; ra = ra + 5) {
-        const xy_raw = this.model.cooToXY({
-          ra: ra,
-          dec: dec,
-        });
+        const xy_raw = this.model.cooToXY(ra, dec);
         const xy = xy_raw
           ? xy_raw.map((number) => -number * this.radius)
           : null;
@@ -406,13 +483,13 @@ class AstronomyView {
     this.ctx.stroke();
     //ctx.restore();
   }
-  drawPlanets() {
+  drawplanets() {
     for (let body of BodyList) {
       const planetInfo = this.model.positionPlanet(body);
-      const xy_raw = this.model.cooToXY({
-        ra: planetInfo.coordination.ra * 15, //TODO: not coordination? change here
-        dec: planetInfo.coordination.dec,
-      });
+      const xy_raw = this.model.cooToXY(
+        planetInfo.coordination.lon,
+        planetInfo.coordination.lat
+      );
       if (xy_raw) {
         this.ctx.beginPath();
         this.ctx.fillStyle = "white";
@@ -428,19 +505,36 @@ class AstronomyView {
       }
     }
   }
-  drawEcliptic() {
-    this.ctx.strokeStyle = "yellow";
+  drawplanetname() {
+    this.ctx.beginPath();
+    this.ctx.fillStyle = "rgba(230,120,250, 0.5)";
+    this.ctx.textWidth = 2.5;
+    for (let body of BodyList) {
+      const planetInfo = this.model.positionPlanet(body);
+      const xy_raw = this.model.cooToXY(
+        planetInfo.coordination.lon,
+        planetInfo.coordination.lat
+      );
+      if (xy_raw) {
+        this.ctx.fillText(
+          body,
+          this.cx - this.radius * xy_raw[0],
+          this.cy - this.radius * xy_raw[1] + 10
+        );
+      }
+    }
+    this.ctx.stroke();
+  }
+  drawCircle(color, rotationType, direction = false) {
+    this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = "white";
     this.ctx.beginPath();
-    let ox = null, //ox record the line's tail 之前的线头
+    let ox = null,
       oy = null;
-    for (let eclLon = 0; eclLon <= 360; eclLon += 2) {
-      const spherical = this.model.positionEcliptic(eclLon);
-      const xy_raw = this.model.cooToXY({
-        ra: spherical.lon,
-        dec: spherical.lat,
-      });
+    for (let lon = 0; lon <= 360; lon += 2) {
+      const spherical = this.model.positionCircle(rotationType, lon);
+      const xy_raw = this.model.cooToXY(spherical.lon, spherical.lat);
       const xy = xy_raw ? xy_raw.map((number) => -this.radius * number) : null;
       if (xy && ox !== null && oy !== null) {
         this.ctx.moveTo(this.cx + ox, this.cy + oy);
@@ -453,9 +547,21 @@ class AstronomyView {
       } else {
         ox = oy = null;
       }
-      if (eclLon % 30 === 0 && eclLon !== 360) {
+      if (lon % 30 === 0 && lon !== 360) {
         if (xy && this.ctx.fillText) {
-          this.ctx.fillText(eclLon, this.cx + xy[0], this.cy + xy[1]);
+          this.ctx.fillText(lon, this.cx + xy[0], this.cy + xy[1]);
+        }
+      }
+      if (direction) {
+        const directionLabels = {
+          0: "N",
+          90: "W",
+          180: "S",
+          270: "E",
+        };
+        const label = directionLabels[lon];
+        if (label && xy) {
+          this.ctx.fillText(label, this.cx + xy[0], this.cy + xy[1] + 10);
         }
       }
     }
@@ -475,6 +581,8 @@ class AstronomyController {
     this.dragx = null;
     this.dragy = null;
     this.isDragging = false;
+    this.initialLon = null; // record the move down's sphere
+    this.initialLat = null;
   }
 
   setupEventListeners() {
@@ -482,10 +590,6 @@ class AstronomyController {
     // adding listeners to checkboxes
     for (const checkboxId of DRAWING_OPTIONS) {
       const checkboxElement = document.getElementById(checkboxId);
-      // checkboxElement = function () {
-      //   this.AstronomyView.drawingOptions[checkboxId] = checkboxElement.checked;
-      //   doDraw();
-      // };
       checkboxElement.addEventListener("change", () => {
         this.view.drawingOptions[checkboxId] = checkboxElement.checked;
         this.view.doDraw();
@@ -508,7 +612,7 @@ class AstronomyController {
       clearInterval(this.intervalId);
       this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
     };
-
+    this.canvasHeight = canvas.getBoundingClientRect().height / 2;
     canvas.onmousemove = (e) => {
       if (!this.isDragging) return;
       const xoffset = e.clientX - this.dragx;
@@ -517,28 +621,40 @@ class AstronomyController {
       if (dist < 5) return;
       this.dragx = e.clientX;
       this.dragy = e.clientY;
-      this.model.lon0Rad += xoffset * 0.004; // TODO: This constant 0.004 should be checked
       this.model.lat0Rad += yoffset * 0.004;
+      // Reverse the Sphere move direction when it is upside-down
+      if (
+        this.model.isMouseMoveDirection(
+          -(e.clientY - this.canvasHeight) / this.view.radius
+        )
+      ) {
+        this.model.lon0Rad += xoffset * 0.004;
+      } else {
+        this.model.lon0Rad -= xoffset * 0.004;
+      }
     };
 
     //Date and Time
     const dateInput = document.getElementById("dateinput");
     const timeInput = document.getElementById("timeinput");
-
+    const currentUTC = DateTime.utc();
+    dateInput.value = currentUTC.toISODate();
+    timeInput.value = currentUTC.toFormat("HH:mm:ss");
     const updateDateTime = () => {
       const dateValue = dateInput.value;
       const timeValue = timeInput.value;
-
       // Create a Date object with the parsed values
-      const datetime = luxon.DateTime.fromISO(
-        dateValue + "T" + timeValue
-      ).toJSDate();
+      const datetime = DateTime.fromISO(dateValue + "T" + timeValue).toJSDate();
       this.model.datetime = datetime;
+      this.model.updateRots();
+      this.view.doDraw();
     };
 
     // Add event listeners to dateInput and timeInput
     dateInput.addEventListener("change", updateDateTime);
     timeInput.addEventListener("change", updateDateTime);
+
+    // Add event listeners to Position input
     for (const position of Position) {
       const input = document.getElementById(position);
       input.addEventListener("change", (event) => {
@@ -552,38 +668,29 @@ class AstronomyController {
         )
           return;
         this.model.observer[position] = inputNumber;
+        this.model.updateRotsHor();
+        if (
+          this.model.gridType === "gridHorizon" ||
+          this.view.drawingOptions["drawhorizon"] === true
+        ) {
+          this.view.doDraw();
+        }
+      });
+    }
+    //Add event listener to the radio button: choose which grid system
+    const radioButtons = document.getElementsByName("gridGroup");
+    for (const radioButton of radioButtons) {
+      radioButton.addEventListener("change", (event) => {
+        const selectedValue = event.target.id; // Get the selected value
+        this.model.gridType = selectedValue;
         this.view.doDraw();
       });
     }
-
-    //Add event listener to the radio button: choose which grid system
-    const radioButtons = document.getElementsByName("gridGroup");
-
-    // for (const radioButton of radioButtons) {
-    //   radioButton.addEventListener("change", (event) => {
-    //     switch (selectedValue) {
-    //       case "gridHorizon":
-    //         // 处理 "Grid: Horizon" 被选择的情况
-    //         this.model.rot = Astronomy.Rotation_ECT_EQJ(this.model.datetime);
-    //         break;
-    //       case "gridEquatorOfDate":
-    //         // 处理 "Grid: Equator (of date)" 被选择的情况
-    //         this.model.rot = Astronomy.Rotation_ECT_EQD(this.model.datetime);
-    //         break;
-    //       case "gridEclipticOfDate":
-    //         // 处理 "Grid: Ecliptic (of date)" 被选择的情况
-    //         this.model.rot = Astronomy.Rotation_ECT_EQJ(this.model.datetime);
-    //         break;
-    //       default:
-    //         break;
-    //     }
-    //   });
-    // }
     this.view.width = canvas.width;
     this.view.height = canvas.height;
     this.view.cx = canvas.width / 2;
     this.view.cy = canvas.height / 2;
-    this.view.radius = 300;
+    this.view.radius = Math.min(canvas.width, canvas.height) / 2;
     if (canvas.getContext) {
       this.view.ctx = canvas.getContext("2d");
       this.view.doDraw();
@@ -592,14 +699,9 @@ class AstronomyController {
 }
 
 function initializeAstronomyApp() {
-  const model = new AstronomyModel(
-    luxon.DateTime.local().toJSDate(),
-    40.7128,
-    -74.006
-  );
+  const model = new AstronomyModel(DateTime.utc().toJSDate(), 116, 39, 50);
   const view = new AstronomyView(model);
   window.controller = new AstronomyController(model, view);
 }
-
 // Initialize the application when the page loads
 window.addEventListener("load", initializeAstronomyApp);

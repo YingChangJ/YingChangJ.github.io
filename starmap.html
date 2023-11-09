@@ -28,6 +28,8 @@
         names</label><br />
       <input type="checkbox" checked id="drawstars" /><label for="drawstars">Display stars</label><br />
       <input type="checkbox" checked id="drawplanets" /><label for="drawplanets">Display planets</label><br />
+      <input type="checkbox" checked id="drawplanetname" /><label for="drawplanetname">Display planets
+        names</label><br />
       <input type="checkbox" checked id="draweclipticofdate" /><label for="draweclipticofdate">Display Ecliptic (of
         date)</label><br />
       <input type="checkbox" checked id="drawequatorofdate" /><label for="drawequatorofdate">Display Equator (of
@@ -35,11 +37,11 @@
       <input type="checkbox" checked id="drawhorizon" /><label for="drawhorizon">Display Horizon</label><br />
     </div>
     <div class="checkbox-group">
-      <input type="radio" checked id="gridHorizon" name="gridGroup" />
-      <label for="gridHorizon">Grid: Horizon</label><br />
+      <input type="radio" id="gridHorizon" name="gridGroup" />
+      <label for="gridHorizon">Grid: Azimuthal</label><br />
 
-      <input type="radio" id="gridEquatorOfDate" name="gridGroup" />
-      <label for="gridEquatorOfDate">Grid: Equator (of date)</label><br />
+      <input type="radio" checked id="gridEquatorOfDate" name="gridGroup" />
+      <label for="gridEquatorOfDate">Grid: Equatorial (of date)</label><br />
 
       <input type="radio" id="gridEclipticOfDate" name="gridGroup" />
       <label for="gridEclipticOfDate">Grid: Ecliptic (of date)</label><br />
@@ -54,19 +56,19 @@
           <label for="AutoTimeCheckBox">Automatic</label>
         </div>
       </td> -->
-      <td>Date and Time:</td>
+      <td>Date and Time: UTC</td>
       <td>
         <input type="date" id="dateinput" value='2023-10-09'>
-        <input type="time" id="timeinput" value="13:30">
+        <input type="time" id="timeinput" value="13:30:15">
       </td>
     </tr>
     <tr>
-      <td>Latitude:</td>
-      <td><input type="text" id="latitude" pattern="[\-\+]?\d+(\.\d*)?" size="10" , value=30></td>
+      <td>Latitude: -90 to 90</td>
+      <td><input type="text" id="latitude" pattern="[\-\+]?\d+(\.\d*)?" size="10" , value=39></td>
     </tr>
     <tr>
-      <td>Longitude:</td>
-      <td><input type="text" id="longitude" pattern="[\-\+]?\d+(\.\d*)?" size="10" , value=120></td>
+      <td>Longitude: -180 to 180</td>
+      <td><input type="text" id="longitude" pattern="[\-\+]?\d+(\.\d*)?" size="10" , value=116></td>
     </tr>
     <tr>
       <td>Elevation (m):</td>
@@ -75,9 +77,7 @@
   </table>
   <script src="./javascript/bright_stars.js" type="text/javascript"></script>
   <script src="./javascript/constellations.js" type="text/javascript"></script>
-  <script src="./javascript/astronomy.browser.min.js"></script>
-  <script src="./javascript/luxon.js"></script>
-  <script src="./javascript/starmap.js"></script>
+  <script src="./javascript/starmap.js" type="module"></script>
 </body>
 
 </html>

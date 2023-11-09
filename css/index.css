@@ -8,7 +8,7 @@
   gap: 30px;
   max-width: 600px;
 }
-.nav-list a {
+li a:first-child {
   color: white;
   text-decoration: none;
   padding: 8px;
@@ -17,9 +17,10 @@
   text-align: left;
 }
 
-.nav-list a:hover {
+li a:first-child:hover {
   background-color: rgba(47, 130, 197, 0.98);
 }
+
 .nav-list p {
   text-align: left;
   padding-left: px;
