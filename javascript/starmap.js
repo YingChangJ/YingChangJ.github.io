@@ -657,6 +657,7 @@ class AstronomyController {
     canvas.addEventListener(
       "touchmove",
       (e) => {
+        e.preventDefault();
         if (!this.isDragging) return;
         const xoffset = e.touches[0].clientX - this.dragx;
         const yoffset = e.touches[0].clientY - this.dragy;
