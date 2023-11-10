@@ -597,7 +597,8 @@ class AstronomyController {
     }
 
     const canvas = document.getElementById("canvas");
-
+    canvas.width = Math.min(window.innerWidth, window.innerHeight) - 40;
+    canvas.height = canvas.width;
     canvas.onmousedown = (e) => {
       this.dragx = e.clientX;
       this.dragy = e.clientY;
