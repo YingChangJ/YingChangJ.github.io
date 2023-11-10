@@ -105,7 +105,7 @@ class AstronomyModel {
     this.rotEclipticToGrid = Astronomy.Rotation_ECT_EQD(this.datetime);
     this.rotEquatorToGrid = null;
     // this.rotHorizonToGrid = Astronomy.Rotation_HOR_EQD(this.datetime);
-    this.gridType = "gridEclipticOfDate";
+    this.gridType = "gridEquatorOfDate";
     const rotsToGrid = [
       "rotStarToGrid",
       "rotEclipticToGrid",
@@ -751,13 +751,3 @@ function initializeAstronomyApp() {
 }
 // Initialize the application when the page loads
 window.addEventListener("load", initializeAstronomyApp);
-document.body.addEventListener(
-  "touchmove",
-  function (e) {
-    // 如果滚动到了顶部，阻止默认行为
-    if (window.scrollY === 0) {
-      e.preventDefault();
-    }
-  },
-  { passive: false }
-);
