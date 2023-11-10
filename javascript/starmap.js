@@ -583,10 +583,6 @@ class AstronomyController {
     this.isDragging = false;
     this.initialLon = null; // record the move down's sphere
     this.initialLat = null;
-    this.isMobileDevice =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
   }
 
   setupEventListeners() {
@@ -602,30 +598,43 @@ class AstronomyController {
 
     const canvas = document.getElementById("canvas");
 
-    const downEvent = this.isMobileDevice ? "touchstart" : "mousedown";
-    const moveEvent = this.isMobileDevice ? "touchmove" : "mousemove";
-    const upEvent = this.isMobileDevice ? "touchend" : "mouseup";
-
-    canvas.addEventListener(downEvent, (e) => {
-      e.preventDefault();
-      this.dragx = e.clientX || (e.touches && e.touches[0].clientX);
-      this.dragy = e.clientY || (e.touches && e.touches[0].clientY);
+    canvas.onmousedown = (e) => {
+      this.dragx = e.clientX;
+      this.dragy = e.clientY;
       this.isDragging = true;
       this.intervalId = setInterval(() => {
         this.view.doDraw();
       }, this.intervalDelay);
-    });
+    };
+    canvas.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        this.dragx = e.touches[0].clientX;
+        this.dragy = e.touches[0].clientY;
+        this.isDragging = true;
+        this.intervalId = setInterval(() => {
+          this.view.doDraw();
+        }, this.intervalDelay);
+      },
+      { passive: false }
+    );
 
-    canvas.addEventListener(upEvent, (e) => {
-      e.preventDefault();
+    canvas.onmouseup = (e) => {
+      this.dragx = this.dragy = null;
+      this.isDragging = false;
+      clearInterval(this.intervalId);
+      this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
+    };
+    canvas.addEventListener("touchend", (e) => {
       this.dragx = this.dragy = null;
       this.isDragging = false;
       clearInterval(this.intervalId);
       this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
     });
+
     this.canvasHeight = canvas.getBoundingClientRect().height / 2;
-    canvas.addEventListener(moveEvent, (e) => {
-      e.preventDefault();
+    canvas.onmousemove = (e) => {
       if (!this.isDragging) return;
       const xoffset = e.clientX - this.dragx;
       const yoffset = e.clientY - this.dragy;
@@ -644,7 +653,31 @@ class AstronomyController {
       } else {
         this.model.lon0Rad -= xoffset * 0.004;
       }
-    });
+    };
+    canvas.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!this.isDragging) return;
+        const xoffset = e.touches[0].clientX - this.dragx;
+        const yoffset = e.touches[0].clientY - this.dragy;
+        const dist = xoffset * xoffset + yoffset * yoffset;
+        if (dist < 5) return;
+        this.dragx = e.touches[0].clientX;
+        this.dragy = e.touches[0].clientY;
+        this.model.lat0Rad += yoffset * 0.004;
+        // Reverse the Sphere move direction when it is upside-down
+        if (
+          this.model.isMouseMoveDirection(
+            -(e.touches[0].clientY - this.canvasHeight) / this.view.radius
+          )
+        ) {
+          this.model.lon0Rad += xoffset * 0.004;
+        } else {
+          this.model.lon0Rad -= xoffset * 0.004;
+        }
+      },
+      { passive: false }
+    );
 
     //Date and Time
     const dateInput = document.getElementById("dateinput");
