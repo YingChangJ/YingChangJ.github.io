@@ -583,6 +583,10 @@ class AstronomyController {
     this.isDragging = false;
     this.initialLon = null; // record the move down's sphere
     this.initialLat = null;
+    this.isMobileDevice =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
   }
 
   setupEventListeners() {
@@ -597,23 +601,28 @@ class AstronomyController {
     }
 
     const canvas = document.getElementById("canvas");
-    canvas.onmousedown = (e) => {
-      this.dragx = e.clientX;
-      this.dragy = e.clientY;
+
+    const downEvent = this.isMobileDevice ? "touchstart" : "mousedown";
+    const moveEvent = this.isMobileDevice ? "touchmove" : "mousemove";
+    const upEvent = this.isMobileDevice ? "touchend" : "mouseup";
+
+    canvas.addEventListener(downEvent, (e) => {
+      this.dragx = e.clientX || (e.touches && e.touches[0].clientX);
+      this.dragy = e.clientY || (e.touches && e.touches[0].clientY);
       this.isDragging = true;
       this.intervalId = setInterval(() => {
         this.view.doDraw();
       }, this.intervalDelay);
-    };
+    });
 
-    canvas.onmouseup = (e) => {
+    canvas.addEventListener(upEvent, (e) => {
       this.dragx = this.dragy = null;
       this.isDragging = false;
       clearInterval(this.intervalId);
       this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
-    };
+    });
     this.canvasHeight = canvas.getBoundingClientRect().height / 2;
-    canvas.onmousemove = (e) => {
+    canvas.addEventListener(moveEvent, (e) => {
       if (!this.isDragging) return;
       const xoffset = e.clientX - this.dragx;
       const yoffset = e.clientY - this.dragy;
@@ -632,7 +641,7 @@ class AstronomyController {
       } else {
         this.model.lon0Rad -= xoffset * 0.004;
       }
-    };
+    });
 
     //Date and Time
     const dateInput = document.getElementById("dateinput");
