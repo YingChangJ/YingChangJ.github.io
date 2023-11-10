@@ -607,6 +607,7 @@ class AstronomyController {
     const upEvent = this.isMobileDevice ? "touchend" : "mouseup";
 
     canvas.addEventListener(downEvent, (e) => {
+      e.preventDefault();
       this.dragx = e.clientX || (e.touches && e.touches[0].clientX);
       this.dragy = e.clientY || (e.touches && e.touches[0].clientY);
       this.isDragging = true;
@@ -616,6 +617,7 @@ class AstronomyController {
     });
 
     canvas.addEventListener(upEvent, (e) => {
+      e.preventDefault();
       this.dragx = this.dragy = null;
       this.isDragging = false;
       clearInterval(this.intervalId);
@@ -623,6 +625,7 @@ class AstronomyController {
     });
     this.canvasHeight = canvas.getBoundingClientRect().height / 2;
     canvas.addEventListener(moveEvent, (e) => {
+      e.preventDefault();
       if (!this.isDragging) return;
       const xoffset = e.clientX - this.dragx;
       const yoffset = e.clientY - this.dragy;
