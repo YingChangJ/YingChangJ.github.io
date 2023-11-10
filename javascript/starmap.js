@@ -597,7 +597,7 @@ class AstronomyController {
     }
 
     const canvas = document.getElementById("canvas");
-    canvas.width = Math.min(window.innerWidth, window.innerHeight) - 40;
+    canvas.width = Math.min(window.innerWidth, window.innerHeight) - 15;
     canvas.height = canvas.width;
     canvas.onmousedown = (e) => {
       this.dragx = e.clientX;
@@ -607,10 +607,16 @@ class AstronomyController {
         this.view.doDraw();
       }, this.intervalDelay);
     };
+    canvas.onmouseup = (e) => {
+      this.dragx = this.dragy = null;
+      this.isDragging = false;
+      clearInterval(this.intervalId);
+      this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
+    };
     canvas.addEventListener(
-      "touchmove",
+      "touchstart",
       (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Prevent default touch behavior (e.g., scrolling or zooming)
         this.dragx = e.touches[0].clientX;
         this.dragy = e.touches[0].clientY;
         this.isDragging = true;
@@ -620,13 +626,6 @@ class AstronomyController {
       },
       { passive: false }
     );
-
-    canvas.onmouseup = (e) => {
-      this.dragx = this.dragy = null;
-      this.isDragging = false;
-      clearInterval(this.intervalId);
-      this.view.doDraw(); // in case the latest model.lon0Rad and model.lat0Rad not in canvas
-    };
     canvas.addEventListener("touchend", (e) => {
       this.dragx = this.dragy = null;
       this.isDragging = false;
