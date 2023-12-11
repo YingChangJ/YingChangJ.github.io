@@ -1,9 +1,6 @@
 "using strict";
 // import { DateTime } from "./luxon.js";
 import * as Astronomy from "./astronomy.js";
-"using strict";
-// import { DateTime } from "./luxon.js";
-import * as Astronomy from "./astronomy.js";
 const select = document.querySelectorAll(".select");
 const clearBtn = document.getElementById("clear");
 
@@ -33,15 +30,7 @@ inputDMS.forEach((input, idx) => {
 
 possibleDates.addEventListener("click", function () {
   const requiredIndices = [0, 1, 3, 4, 6, 7];
-  const requiredIndices = [0, 1, 3, 4, 6, 7];
   let emptyFound = false;
-
-  Array.from(inputDMS).forEach((input, index) => {
-    if (requiredIndices.includes(index) && input.value === "") {
-      emptyFound = true;
-    }
-  });
-
 
   Array.from(inputDMS).forEach((input, index) => {
     if (requiredIndices.includes(index) && input.value === "") {
@@ -90,11 +79,6 @@ possibleDates.addEventListener("click", function () {
       ul.appendChild(li2); // 将 <li> 添加到 <ul> 中
       ul.appendChild(li3); // 将 <li> 添加到 <ul> 中
       ul.appendChild(li4); // 将 <li> 添加到 <ul> 中
-
-      //Great! then we need to figure out the locations
-      let lon = 0;
-      let lat = 0;
-
       //Great! then we need to figure out the locations
       let lon = 0;
       let lat = 0;
@@ -141,57 +125,38 @@ possibleDates.addEventListener("click", function () {
           const li5 = document.createElement("li");
           lat = (fi / Math.PI) * 180;
           if (!Number.isNaN(fi)) {
-          lat = (fi / Math.PI) * 180;
-          if (!Number.isNaN(fi)) {
-            const desc = fi > 0 ? "(north positive)" : "(south negative)";
-            li5.textContent = `Latitude: ${decimalToDMS(lat)} ${desc}`;
-            li5.textContent = `Latitude: ${decimalToDMS(lat)} ${desc}`;
-          } else {
-            li5.textContent = `Latitude not found.`;
+            lat = (fi / Math.PI) * 180;
+            if (!Number.isNaN(fi)) {
+              const desc = fi > 0 ? "(north positive)" : "(south negative)";
+              li5.textContent = `Latitude: ${decimalToDMS(lat)} ${desc}`;
+              li5.textContent = `Latitude: ${decimalToDMS(lat)} ${desc}`;
+            } else {
+              li5.textContent = `Latitude not found.`;
+            }
+
+            ul.appendChild(li5);
           }
-
-
-          ul.appendChild(li5);
         }
+        // 创建一个新的按钮元素
+        const chartButton = document.createElement("button");
+        chartButton.type = "button";
+        chartButton.textContent = "Chart";
+        chartButton.id = "chart";
+        // 为按钮添加样式
+        // chartButton.style.display = "flex";
+        chartButton.style.flexShrink = "0"; // 防止在横向上收缩
+        // 将新的按钮元素添加到 <ul> 中
+        ul.appendChild(chartButton);
+
+        // 监听按钮点击事件
+        chartButton.addEventListener("click", function () {
+          // 构建目标 URL，将参数添加到查询字符串中
+          const targetUrl = `../chart.html?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
+
+          // 执行页面跳转
+          window.location.href = targetUrl;
+        });
       }
-      // 创建一个新的按钮元素
-      const chartButton = document.createElement("button");
-      chartButton.type = "button";
-      chartButton.textContent = "Chart";
-      chartButton.id = "chart";
-      // 为按钮添加样式
-      // chartButton.style.display = "flex";
-      chartButton.style.flexShrink = "0"; // 防止在横向上收缩
-      // 将新的按钮元素添加到 <ul> 中
-      ul.appendChild(chartButton);
-
-      // 监听按钮点击事件
-      chartButton.addEventListener("click", function () {
-        // 构建目标 URL，将参数添加到查询字符串中
-        const targetUrl = `../chart.html?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
-
-        // 执行页面跳转
-        window.location.href = targetUrl;
-      });
-      // 创建一个新的按钮元素
-      const chartButton = document.createElement("button");
-      chartButton.type = "button";
-      chartButton.textContent = "Chart";
-      chartButton.id = "chart";
-      // 为按钮添加样式
-      // chartButton.style.display = "flex";
-      chartButton.style.flexShrink = "0"; // 防止在横向上收缩
-      // 将新的按钮元素添加到 <ul> 中
-      ul.appendChild(chartButton);
-
-      // 监听按钮点击事件
-      chartButton.addEventListener("click", function () {
-        // 构建目标 URL，将参数添加到查询字符串中
-        const targetUrl = `../chart.html?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
-
-        // 执行页面跳转
-        window.location.href = targetUrl;
-      });
     });
   } else {
     const li = document.createElement("li");
