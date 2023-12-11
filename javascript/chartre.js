@@ -1,3 +1,6 @@
+"using strict";
+// import { DateTime } from "./luxon.js";
+import * as Astronomy from "./astronomy.js";
 const select = document.querySelectorAll(".select");
 const clearBtn = document.getElementById("clear");
 
@@ -26,20 +29,21 @@ inputDMS.forEach((input, idx) => {
 });
 
 possibleDates.addEventListener("click", function () {
+  const requiredIndices = [0, 1, 3, 4, 6, 7];
   let emptyFound = false;
-  // const startTime = performance.now();
-  Array.from(inputDMS)
-    .slice(0, 9)
-    .forEach((input) => {
-      if (input.value === "") {
-        emptyFound = true;
-      }
-    });
+
+  Array.from(inputDMS).forEach((input, index) => {
+    if (requiredIndices.includes(index) && input.value === "") {
+      emptyFound = true;
+    }
+  });
+
   if (emptyFound) {
     alert("Tell us the positions of the Sun, Moon and Saturn...");
     return;
   }
   console.log("Al ho survive!");
+  // re is a list of possible datetime [time, foundSunLon - targetSunLon,foundMoonLon - targetMoonLon,foundSaturnLon - targetSaturnLon]
   const re = convertChartDateTime(
     Number(inputDMS[0].value) +
       select[0].selectedIndex * 30 +
@@ -65,7 +69,7 @@ possibleDates.addEventListener("click", function () {
       const li2 = document.createElement("li");
       const li3 = document.createElement("li");
       const li4 = document.createElement("li");
-      li.textContent = item[0].date;
+      li.textContent = item[0].date.toUTCString();
       li2.textContent = `Diff: Sun ${item[3].toFixed(6)}`;
       li3.textContent = `Diff: Moon ${item[1].toFixed(6)}`;
       li4.textContent = `Diff: Saturn ${item[2].toFixed(6)}`;
@@ -73,7 +77,10 @@ possibleDates.addEventListener("click", function () {
       ul.appendChild(li2); // 将 <li> 添加到 <ul> 中
       ul.appendChild(li3); // 将 <li> 添加到 <ul> 中
       ul.appendChild(li4); // 将 <li> 添加到 <ul> 中
-      //Great! then we need to figure our the locations
+
+      //Great! then we need to figure out the locations
+      let lon = 0;
+      let lat = 0;
       if (inputDMS[12].value) {
         const geoMCLon =
           Number(inputDMS[12].value) +
@@ -96,7 +103,8 @@ possibleDates.addEventListener("click", function () {
         }
         const li1 = document.createElement("li");
         const desc = lonFound > 0 ? "(east positive)" : "(west negative)";
-        li1.textContent = `\nLongitude: ${lonFound.toFixed(6)} ${desc}`;
+        li1.textContent = `\nLongitude: ${decimalToDMS(lonFound)} ${desc}`;
+        lon = lonFound;
         ul.appendChild(li1);
         if (inputDMS[9].value) {
           const geoASCLon =
@@ -112,17 +120,36 @@ possibleDates.addEventListener("click", function () {
               Math.sin(e)
           );
           const li5 = document.createElement("li");
-          if (fi) {
+          lat = (fi / Math.PI) * 180;
+          if (!Number.isNaN(fi)) {
             const desc = fi > 0 ? "(north positive)" : "(south negative)";
-            li5.textContent = `Latitude: ${((fi / Math.PI) * 180).toFixed(
-              6
-            )} ${desc}`;
+            li5.textContent = `Latitude: ${decimalToDMS(lat)} ${desc}`;
           } else {
             li5.textContent = `Latitude not found.`;
           }
+
           ul.appendChild(li5);
         }
       }
+      // 创建一个新的按钮元素
+      const chartButton = document.createElement("button");
+      chartButton.type = "button";
+      chartButton.textContent = "Chart";
+      chartButton.id = "chart";
+      // 为按钮添加样式
+      // chartButton.style.display = "flex";
+      chartButton.style.flexShrink = "0"; // 防止在横向上收缩
+      // 将新的按钮元素添加到 <ul> 中
+      ul.appendChild(chartButton);
+
+      // 监听按钮点击事件
+      chartButton.addEventListener("click", function () {
+        // 构建目标 URL，将参数添加到查询字符串中
+        const targetUrl = `../chart.html?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
+
+        // 执行页面跳转
+        window.location.href = targetUrl;
+      });
     });
   } else {
     const li = document.createElement("li");
@@ -133,7 +160,14 @@ possibleDates.addEventListener("click", function () {
   // const executionTime = endTime - startTime;
   // console.log("Your function took " + executionTime + " milliseconds to run");
 });
+function decimalToDMS(decimalDegree) {
+  const dec = Math.abs(decimalDegree);
+  const degrees = Math.floor(dec);
+  const minutes = Math.floor((dec - degrees) * 60);
+  const seconds = ((dec - degrees - minutes / 60) * 3600).toFixed(2);
 
+  return `${degrees}° ${Math.abs(minutes)}' ${Math.abs(seconds)}"`;
+}
 function convertChartDateTime(sun, moon, saturn) {
   const result = [];
   console.log(`${sun}`);
@@ -203,25 +237,25 @@ function convertChartDateTime(sun, moon, saturn) {
 }
 
 // //for test purpose
-// inputDMS[0].value = 25;
-// inputDMS[1].value = 55;
-// inputDMS[2].value = 0;
-// select[0].selectedIndex = 3;
+inputDMS[0].value = 1;
+inputDMS[1].value = 36;
+//inputDMS[2].value = 36;
+select[0].selectedIndex = 8;
 
-// inputDMS[3].value = 6;
-// inputDMS[4].value = 3;
-// inputDMS[5].value = 0;
-// select[1].selectedIndex = 6;
+inputDMS[3].value = 1;
+inputDMS[4].value = 52;
+//inputDMS[5].value = 0;
+select[1].selectedIndex = 2;
 
-// inputDMS[6].value = 22;
-// inputDMS[7].value = 47;
-// inputDMS[8].value = 0;
-// select[2].selectedIndex = 5;
+inputDMS[6].value = 1;
+inputDMS[7].value = 10;
+//inputDMS[8].value = 0;
+select[2].selectedIndex = 9;
 
-// inputDMS[9].value = 7;
-// inputDMS[10].value = 36;
-// select[3].selectedIndex = 9;
+inputDMS[9].value = 10;
+inputDMS[10].value = 0;
+select[3].selectedIndex = 9;
 
-// inputDMS[12].value = 2;
-// inputDMS[13].value = 52;
-// select[4].selectedIndex = 7;
+inputDMS[12].value = 5;
+inputDMS[13].value = 47;
+select[4].selectedIndex = 7;
