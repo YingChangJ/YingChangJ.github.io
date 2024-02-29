@@ -16,7 +16,22 @@ let data = {
   },
   cusps: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
 };
-
+function distance(degree1, degree2) {
+  //degree1 >= degree2 if not cross 360, find the distance, when degree2 counter-clockwise to degree1
+  if (degree1 >= degree2) {
+    return degree1 - degree2;
+  } else {
+    return degree1 + 360 - degree2;
+  }
+}
+function trisection(degree1, degree2) {
+  //degree1 >= degree2 if not cross 360, find the trisection points, when degree2 counter-clockwise to degree1
+  // Calculate the first and second trisection points
+  const deg1 = degree1 >= degree2 ? degree1 : degree1 + 360;
+  const trisect1 = (2 * deg1 + degree2) / 3;
+  const trisect2 = (deg1 + 2 * degree2) / 3;
+  return [trisect1 % 360, trisect2 % 360];
+}
 function calculation() {
   // 获取查询字符串
   const queryString = window.location.search;
@@ -73,31 +88,24 @@ function calculation() {
   let mc =
     (Math.atan(Math.sin(theta) / Math.cos(theta) / Math.cos(e)) * 180) /
     Math.PI;
-  if (asc < 0) asc += 360;
-  mc = (mc + 180) % 360;
+  if (asc < 0) asc += 180;
+  if (mc < 0) mc += 180;
+  const distanceLSTtoASC = distance(asc, siderealTime * 15 + lon);
+  if (distanceLSTtoASC >= 180) {
+    asc += 180;
+  }
+  const distanceMCtoASC = distance(asc, mc);
+  if (distanceMCtoASC >= 180) {
+    mc += 180;
+  }
   data.cusps[0] = asc;
   data.cusps[3] = (180 + mc) % 360;
   data.cusps[6] = (180 + asc) % 360;
   data.cusps[9] = mc;
-  let start = 0;
-  if (data.cusps[0] > data.cusps[6]) {
-    start = 6;
-  } else {
-    start = 0;
-  }
-  data.cusps[start + 1] =
-    (data.cusps[start] * 2) / 3 + data.cusps[start + 3] / 3;
-  data.cusps[start + 2] =
-    data.cusps[start] / 3 + (data.cusps[start + 3] * 2) / 3;
-  data.cusps[start + 4] =
-    (data.cusps[start + 3] * 2) / 3 + data.cusps[(start + 6) % 12] / 3;
-  data.cusps[start + 5] =
-    data.cusps[start + 3] / 3 + (data.cusps[(start + 6) % 12] * 2) / 3;
-  const end = 6 - start;
-  data.cusps[end + 1] = (data.cusps[(end + 1 + 6) % 12] + 180) % 360;
-  data.cusps[end + 2] = (data.cusps[(end + 2 + 6) % 12] + 180) % 360;
-  data.cusps[end + 4] = (data.cusps[(end + 4 + 6) % 12] + 180) % 360;
-  data.cusps[end + 5] = (data.cusps[(end + 5 + 6) % 12] + 180) % 360;
+  [data.cusps[2], data.cusps[1]] = trisection(data.cusps[0], data.cusps[3]);
+  [data.cusps[5], data.cusps[4]] = trisection(data.cusps[3], data.cusps[6]);
+  [data.cusps[8], data.cusps[7]] = trisection(data.cusps[6], data.cusps[9]);
+  [data.cusps[11], data.cusps[10]] = trisection(data.cusps[9], data.cusps[0]);
 }
 
 function drawing() {

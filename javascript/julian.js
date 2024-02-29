@@ -7,6 +7,7 @@ const minute = document.getElementById("minuteInput");
 const s = document.getElementById("secondInput");
 const ut = document.getElementById("utInput");
 const tt = document.getElementById("ttInput");
+const ts = document.getElementById("tsInput");
 const tz = document.getElementById("time-zone");
 
 //clear button
@@ -20,6 +21,7 @@ function clearInput() {
   s.value = "";
   ut.value = "";
   tt.value = "";
+  ts.value = "";
   tz.value = "";
   initCurrentDateTime();
 }
@@ -74,6 +76,7 @@ function updateTime() {
   console.log(astroTime);
   utInput.value = (astroTime.ut + 2451545.0).toFixed(6);
   ttInput.value = (astroTime.tt + 2451545.0).toFixed(6);
+  tsInput.value = +date;
 }
 
 function updateTimeFromTT() {
@@ -90,6 +93,7 @@ function updateTimeFromTT() {
   tz.value = 0;
   ut.value = astroTime.ut + 2451545.0;
   tt.value = astroTime.tt + 2451545.0;
+  ts.value = +dateNew;
 }
 
 function updateTimeFromUT() {
@@ -105,8 +109,25 @@ function updateTimeFromUT() {
   tz.value = 0;
   ut.value = astroTime.ut + 2451545.0;
   tt.value = astroTime.tt + 2451545.0;
+  ts.value = +dateNew;
 }
 
+function updateTimeFromTS() {
+  const dateNew = new Date(Number(ts.value));
+  console.log(ts.value, dateNew);
+  const astroTime = new Astronomy.AstroTime(dateNew);
+  // const dateNew = astroTime.date;
+
+  y.value = dateNew.getUTCFullYear();
+  month.value = dateNew.getUTCMonth() + 1;
+  d.value = dateNew.getUTCDate();
+  h.value = dateNew.getUTCHours();
+  minute.value = dateNew.getUTCMinutes();
+  s.value = dateNew.getUTCSeconds();
+  tz.value = 0;
+  ut.value = astroTime.ut + 2451545.0;
+  tt.value = astroTime.tt + 2451545.0;
+}
 //logic about the date and time input
 const nextThreshold = [1680, 2, 4, 3, 6, 6];
 const maxValue = [16800, 12, 31, 24, 59, 59];

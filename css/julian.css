@@ -9,9 +9,11 @@
 .tjd {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.tjd .tjd-button-container {
+.tjd-button-container {
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -16,7 +16,7 @@
   <header>
     <h1>Time Converter</h1>
     <!-- <p>Convert between calendar and julian day number</p> -->
-    <small>Year between -13000 to 16800, in prophetic gregorian calendar.</small>
+    <small>Year between -13000 to 16800, in gregorian calendar.</small>
   </header>
   <form id="dateForm">
     <div class="form-group" id="ymd">
@@ -78,8 +78,19 @@
         </div>
       </form>
     </div>
+    <div class="tjd-button-container">
+      <button type="button" onclick="updateTimeFromTS()">🔼Convert🔼</button>
 
+      <form class='tjdForm'>
+        <div>
+          <div class="formInput"><label for="tsInput">Timestamp (to milli)</label>
+            <input type="number" class="input-number" id="tsInput" value="0" step=0.000001>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
+
   <script src="./javascript/astronomy.browser.min.js"></script>
   <script src="./javascript/julian.js"></script>
 </body>
