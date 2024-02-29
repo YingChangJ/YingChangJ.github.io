@@ -103,6 +103,6 @@ ol li {
 @media (max-width: 767px) {
   /* 手机样式 */
   form {
-    padding: 15px;
+    padding: 20px;
   }
 }

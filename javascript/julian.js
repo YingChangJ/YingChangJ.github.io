@@ -9,6 +9,7 @@ const ut = document.getElementById("utInput");
 const tt = document.getElementById("ttInput");
 const ts = document.getElementById("tsInput");
 const tz = document.getElementById("time-zone");
+const tss = document.getElementById("tssInput");
 
 //clear button
 
@@ -22,6 +23,7 @@ function clearInput() {
   ut.value = "";
   tt.value = "";
   ts.value = "";
+  tss.value = "";
   tz.value = "";
   initCurrentDateTime();
 }
@@ -77,6 +79,7 @@ function updateTime() {
   utInput.value = (astroTime.ut + 2451545.0).toFixed(6);
   ttInput.value = (astroTime.tt + 2451545.0).toFixed(6);
   tsInput.value = +date;
+  tssInput.value = Math.floor(date / 1000);
 }
 
 function updateTimeFromTT() {
@@ -94,6 +97,7 @@ function updateTimeFromTT() {
   ut.value = astroTime.ut + 2451545.0;
   tt.value = astroTime.tt + 2451545.0;
   ts.value = +dateNew;
+  tss.value = Math.floor(+dateNew / 1000);
 }
 
 function updateTimeFromUT() {
@@ -110,14 +114,12 @@ function updateTimeFromUT() {
   ut.value = astroTime.ut + 2451545.0;
   tt.value = astroTime.tt + 2451545.0;
   ts.value = +dateNew;
+  tss.value = Math.floor(+dateNew / 1000);
 }
 
 function updateTimeFromTS() {
   const dateNew = new Date(Number(ts.value));
-  console.log(ts.value, dateNew);
   const astroTime = new Astronomy.AstroTime(dateNew);
-  // const dateNew = astroTime.date;
-
   y.value = dateNew.getUTCFullYear();
   month.value = dateNew.getUTCMonth() + 1;
   d.value = dateNew.getUTCDate();
@@ -127,6 +129,21 @@ function updateTimeFromTS() {
   tz.value = 0;
   ut.value = astroTime.ut + 2451545.0;
   tt.value = astroTime.tt + 2451545.0;
+  tss.value = Math.floor(ts.value / 1000);
+}
+function updateTimeFromTSSec() {
+  const dateNew = new Date(Number(tss.value) * 1000);
+  const astroTime = new Astronomy.AstroTime(dateNew);
+  y.value = dateNew.getUTCFullYear();
+  month.value = dateNew.getUTCMonth() + 1;
+  d.value = dateNew.getUTCDate();
+  h.value = dateNew.getUTCHours();
+  minute.value = dateNew.getUTCMinutes();
+  s.value = dateNew.getUTCSeconds();
+  tz.value = 0;
+  ut.value = astroTime.ut + 2451545.0;
+  tt.value = astroTime.tt + 2451545.0;
+  ts.value = Number(tss.value) * 1000;
 }
 //logic about the date and time input
 const nextThreshold = [1680, 2, 4, 3, 6, 6];
