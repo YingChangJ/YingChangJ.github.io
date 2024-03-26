@@ -92,7 +92,7 @@ checkboxHelper.addEventListener("change", function () {
 const defaultIntensity = 5;
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0); // 白色平行光
 directionalLight.position.set(-100, 0, 0); // 设置光源的初始位置
-directionalLight.shadow.bias = -0.0005;
+// directionalLight.shadow.bias = -0.0005;
 scene.add(directionalLight);
 const ambientLight = new THREE.AmbientLight(0xffffff, defaultIntensity);
 scene.add(ambientLight);
@@ -131,8 +131,8 @@ camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 let model;
 const textureLoader = new THREE.TextureLoader();
-const bump = textureLoader.load("./javascript/bump.jpg");
-const normal = textureLoader.load("./javascript/normal.jpg");
+const displacement = textureLoader.load("./javascript/displacement.jpg");
+
 loader.load(
   "Moon_1_3474.glb", //[-500,500]
   function (gltf) {
@@ -144,29 +144,29 @@ loader.load(
       (1737.1 / 500) * 0.1
     ); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
     // 遍历模型的所有子对象，查找其中的所有 Mesh 对象
-    model.traverse((child) => {
-      if (child.isMesh) {
-        // 如果当前子对象是 Mesh 对象，即包含了一个或多个三角面片
+    // model.traverse((child) => {
+    //   if (child.isMesh) {
+    //     // 如果当前子对象是 Mesh 对象，即包含了一个或多个三角面片
 
-        // 获取当前子对象的材质（可能是一个单独的材质，也可能是材质数组）
-        let materials = child.material;
+    //     // 获取当前子对象的材质（可能是一个单独的材质，也可能是材质数组）
+    //     let materials = child.material;
 
-        // 将材质属性设置为需要的值
-        if (Array.isArray(materials)) {
-          // 如果当前子对象有多个材质
-          for (let material of materials) {
-            // 调整材质属性，比如设置颜色、透明度、反射率等
-            material.color.set(0xff0000); // 设置颜色为红色
-            material.opacity = 0.5; // 设置透明度为 0.5
-            // 其他材质属性的调整
-          }
-        } else {
-          // materials.normalMap = normal;
-          materials.bumpMap = bump;
-          materials;
-        }
-      }
-    });
+    //     // 将材质属性设置为需要的值
+    //     if (Array.isArray(materials)) {
+    //       // 如果当前子对象有多个材质
+    //       for (let material of materials) {
+    //         // 调整材质属性，比如设置颜色、透明度、反射率等
+    //         material.color.set(0xff0000); // 设置颜色为红色
+    //         material.opacity = 0.5; // 设置透明度为 0.5
+    //         // 其他材质属性的调整
+    //       }
+    //     } else {
+    //       // // materials.normalMap = normal;
+    //       // materials.displacementMap = displacement;
+    //       // materials.displacementScale = 10;
+    //     }
+    //   }
+    // });
 
     animate();
   },
@@ -242,8 +242,8 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
     const localThree = new THREE.Vector3(-local.x, local.z, local.y);
 
     // 获取模型的世界变换矩阵的逆矩阵
-    const worldInverseMatrix = new THREE.Matrix4();
-    worldInverseMatrix.copy(model.matrixWorld).invert();
+    // const worldInverseMatrix = new THREE.Matrix4();
+    // worldInverseMatrix.copy(model.matrixWorld).invert();
 
     // 将局部 X 轴方向向量转换到模型的局部坐标系中
     const rotatedLocalX = localThree.applyMatrix4(model.matrixWorld);
