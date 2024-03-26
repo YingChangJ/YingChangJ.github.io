@@ -9,9 +9,6 @@ const scene = new THREE.Scene();
 const datetimeInput = document.getElementById("datetime-moon");
 let datetime = DateTime.now().setZone("utc");
 
-console.log(Astronomy.GeoMoon(-1000000));
-console.log(Astronomy.GeoMoonState(-1000000));
-
 // 设置日期输入框的值
 datetimeInput.value = datetime.toISO().slice(0, 16);
 datetime = datetime.toMillis();
@@ -128,10 +125,16 @@ camera.position.x = -38439.9; //distance 384399 km
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 // renderer.render(scene, camera);
-
+// Show loading message or indicator
+var loadingMessage = document.createElement("div");
+loadingMessage.style.position = "absolute";
+loadingMessage.style.top = "50%";
+loadingMessage.style.left = "50%";
+loadingMessage.textContent = "Loading...";
+document.body.appendChild(loadingMessage);
 let model;
-const textureLoader = new THREE.TextureLoader();
-const displacement = textureLoader.load("./javascript/displacement.jpg");
+// const textureLoader = new THREE.TextureLoader();
+// const displacement = textureLoader.load("./javascript/displacement.jpg");
 
 loader.load(
   "Moon_1_3474.glb", //[-500,500]
@@ -143,31 +146,8 @@ loader.load(
       (1737.1 / 500) * 0.1,
       (1737.1 / 500) * 0.1
     ); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
-    // 遍历模型的所有子对象，查找其中的所有 Mesh 对象
-    // model.traverse((child) => {
-    //   if (child.isMesh) {
-    //     // 如果当前子对象是 Mesh 对象，即包含了一个或多个三角面片
-
-    //     // 获取当前子对象的材质（可能是一个单独的材质，也可能是材质数组）
-    //     let materials = child.material;
-
-    //     // 将材质属性设置为需要的值
-    //     if (Array.isArray(materials)) {
-    //       // 如果当前子对象有多个材质
-    //       for (let material of materials) {
-    //         // 调整材质属性，比如设置颜色、透明度、反射率等
-    //         material.color.set(0xff0000); // 设置颜色为红色
-    //         material.opacity = 0.5; // 设置透明度为 0.5
-    //         // 其他材质属性的调整
-    //       }
-    //     } else {
-    //       // // materials.normalMap = normal;
-    //       // materials.displacementMap = displacement;
-    //       // materials.displacementScale = 10;
-    //     }
-    //   }
-    // });
-
+    // Hide loading message or indicator after loading
+    document.body.removeChild(loadingMessage);
     animate();
   },
   undefined,
@@ -255,9 +235,5 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
       rotatedLocalX.z
     );
   }
-  // const thetaIncrement = 3; // 每次增加的角度
-  // const currentRotationLight = directionalLight.position.toArray(); // 将当前角度转换为数组
-  // const newTheta = currentRotationLight[0] + thetaIncrement; // 计算新的角度
-  // directionalLight.position.set(newTheta % 180, 2, 2); // 更新光源的位置
   renderer.render(scene, camera);
 }
