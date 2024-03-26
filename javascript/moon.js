@@ -2,9 +2,9 @@ import * as THREE from "./three/build/three.module.js";
 import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
 import * as Astronomy from "./astronomy-engine.js";
 import { DateTime } from "./luxon.js";
-const loader = new GLTFLoader();
-const scene = new THREE.Scene();
 
+const scene = new THREE.Scene();
+const MOON_RADIUS = 173.71;
 // 获取日期时间输入框元素
 const datetimeInput = document.getElementById("datetime-moon");
 let datetime = DateTime.now().setZone("utc");
@@ -62,24 +62,46 @@ paExclude.addEventListener("click", function () {
 });
 
 // 创建辅助点的几何体和材质
-const geometry = new THREE.SphereGeometry(2, 2, 2);
-const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const geometrySubEarth = new THREE.SphereGeometry(2, 2, 2);
+const materialSubEarth = new THREE.MeshBasicMaterial({ color: 0x34a8eb });
 // Declare a variable to store the reference to the helper point
-let helperPoint;
+let subEarth;
 // Get the checkbox element
-const checkboxHelper = document.getElementById("helper-point");
+const checkboxSubEarth = document.getElementById("sub-earth");
 // Add an event listener for the "change" event
-checkboxHelper.addEventListener("change", function () {
-  if (checkboxHelper.checked) {
+checkboxSubEarth.addEventListener("change", function () {
+  if (checkboxSubEarth.checked) {
     // If the checkbox is checked, create the helper point and add it to the scene
-    helperPoint = new THREE.Mesh(geometry, material);
-    helperPoint.position.set(-2000, 0, 0);
-    scene.add(helperPoint);
+    subEarth = new THREE.Mesh(geometrySubEarth, materialSubEarth);
+    subEarth.position.set(-2000, 0, 0);
+    scene.add(subEarth);
   } else {
     // If the checkbox is unchecked, remove the helper point from the scene
-    if (helperPoint) {
-      scene.remove(helperPoint);
-      helperPoint = undefined; // Clear the reference
+    if (subEarth) {
+      scene.remove(subEarth);
+      subEarth = undefined; // Clear the reference
+    }
+  }
+  updateOneframe(datetime);
+});
+
+const geometrySubSun = new THREE.SphereGeometry(2, 2, 2);
+const materialSubSun = new THREE.MeshBasicMaterial({ color: 0xf27252 });
+let subSun;
+// Get the checkbox element
+const checkboxHelperSubSun = document.getElementById("sub-sun");
+// Add an event listener for the "change" event
+checkboxHelperSubSun.addEventListener("change", function () {
+  if (checkboxHelperSubSun.checked) {
+    // If the checkbox is checked, create the helper point and add it to the scene
+    subSun = new THREE.Mesh(geometrySubSun, materialSubSun);
+    subSun.position.set(-2000, 20, 0);
+    scene.add(subSun);
+  } else {
+    // If the checkbox is unchecked, remove the helper point from the scene
+    if (subSun) {
+      scene.remove(subSun);
+      subSun = undefined; // Clear the reference
     }
   }
   updateOneframe(datetime);
@@ -135,17 +157,13 @@ document.body.appendChild(loadingMessage);
 let model;
 // const textureLoader = new THREE.TextureLoader();
 // const displacement = textureLoader.load("./javascript/displacement.jpg");
-
+const loader = new GLTFLoader();
 loader.load(
   "Moon_1_3474.glb", //[-500,500]
   function (gltf) {
     model = gltf.scene;
     scene.add(model);
-    model.scale.set(
-      (1737.1 / 500) * 0.1,
-      (1737.1 / 500) * 0.1,
-      (1737.1 / 500) * 0.1
-    ); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
+    model.scale.set(MOON_RADIUS / 500, MOON_RADIUS / 500, MOON_RADIUS / 500); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
     // Hide loading message or indicator after loading
     document.body.removeChild(loadingMessage);
     animate();
@@ -212,28 +230,45 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
     );
   }
   // // 每次更新光源角度
-  if (includeShadow) {
+  if (includeShadow || subSun) {
     // to xyz
-    const local = Astronomy.VectorFromSphere(
+    const subSunVectorLocal = Astronomy.VectorFromSphere(
       new Astronomy.Spherical(sunLat, sunLon, 1),
       0
     );
     // to three vector
-    const localThree = new THREE.Vector3(-local.x, local.z, local.y);
-
+    const localThree = new THREE.Vector3(
+      -subSunVectorLocal.x,
+      subSunVectorLocal.z,
+      subSunVectorLocal.y
+    );
+    // 将局部 X 轴方向向量转换到模型的局部坐标系中
+    const subSunVectorWorld = localThree.applyMatrix4(model.matrixWorld);
     // 获取模型的世界变换矩阵的逆矩阵
     // const worldInverseMatrix = new THREE.Matrix4();
     // worldInverseMatrix.copy(model.matrixWorld).invert();
-
-    // 将局部 X 轴方向向量转换到模型的局部坐标系中
-    const rotatedLocalX = localThree.applyMatrix4(model.matrixWorld);
-
-    // 输出旋转后的向量
-    directionalLight.position.set(
-      rotatedLocalX.x,
-      rotatedLocalX.y,
-      rotatedLocalX.z
-    );
+    if (subSun) {
+      // 1. 计算当前向量的长度
+      const currentLength = subSunVectorWorld.length();
+      // 2. 计算缩放因子
+      const scaleFactor = (MOON_RADIUS + 5) / currentLength;
+      // 3. 缩放向量
+      subSunVectorWorld.multiplyScalar(scaleFactor);
+      subSun.position.set(
+        subSunVectorWorld.x,
+        subSunVectorWorld.y,
+        subSunVectorWorld.z
+      );
+    }
+    if (includeShadow) {
+      // 输出旋转后的向量
+      directionalLight.position.set(
+        subSunVectorWorld.x,
+        subSunVectorWorld.y,
+        subSunVectorWorld.z
+      );
+    }
   }
+
   renderer.render(scene, camera);
 }
