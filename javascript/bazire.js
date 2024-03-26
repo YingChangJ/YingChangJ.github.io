@@ -1,3 +1,4 @@
+import * as Astronomy from "./astronomy-engine.js";
 const button = document.getElementById("btn");
 const radiosYearGan = document.querySelectorAll('input[name="year-gan"]');
 const radiosYearZhi = document.querySelectorAll('input[name="year-zhi"]');

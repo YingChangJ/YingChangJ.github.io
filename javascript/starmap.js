@@ -1,6 +1,6 @@
 "using strict";
 import { DateTime } from "./luxon.js";
-import * as Astronomy from "./astronomy.js";
+import * as Astronomy from "./astronomy-engine.js";
 //reconstruct from the work of Thomas Boch
 const DRAWING_OPTIONS = [
   "drawequatorofdate",

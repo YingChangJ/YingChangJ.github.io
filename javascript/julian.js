@@ -1,4 +1,5 @@
-"use strict";
+import * as Astronomy from "./astronomy-engine.js";
+
 const y = document.getElementById("yearInput");
 const month = document.getElementById("monthInput");
 const d = document.getElementById("dayInput");
@@ -174,3 +175,17 @@ dateTime.forEach((input, idx) => {
     }
   });
 });
+
+document
+  .getElementById("updateTimeFromTSSec")
+  .addEventListener("click", updateTimeFromTSSec);
+document
+  .getElementById("updateTimeFromTS")
+  .addEventListener("click", updateTimeFromTS);
+document
+  .getElementById("updateTimeFromUT")
+  .addEventListener("click", updateTimeFromUT);
+document
+  .getElementById("updateTimeFromTT")
+  .addEventListener("click", updateTimeFromTT);
+document.getElementById("updateTime").addEventListener("click", updateTime);

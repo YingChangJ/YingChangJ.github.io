@@ -1,6 +1,4 @@
-Chart Reverse Search Engineering; 
-Julian Day Number Calculator; 
-Bazi Reverse Search
-
-A simple webpage host for these useful tools. Simple method I am using @see https://github.com/YingChangJ/YingChangJ.github.io/blob/main/javascript/readme.md
-All calculations using Astronomy Engine (another version uses Swiss Ephemeris, which is easier for chart-related calculation and a tiny little more accurate, but need a server... then I turned to Astronomy Engine)
+1. Chart Reverse Search Engineering, Chart -> DateTime
+2. Julian Day Number -> Timestamp/Calendar
+3. Bazi Reverse Search, Bazi -> DateTime
+4. Moon with libration

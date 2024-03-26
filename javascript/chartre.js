@@ -1,6 +1,6 @@
 "using strict";
-// import { DateTime } from "./luxon.js";
-import * as Astronomy from "./astronomy.js";
+// import { DateTime } from "luxon.js";
+import * as Astronomy from "./astronomy-engine.js";
 const select = document.querySelectorAll(".select");
 const clearBtn = document.getElementById("clear");
 
@@ -151,7 +151,7 @@ possibleDates.addEventListener("click", function () {
         // 监听按钮点击事件
         chartButton.addEventListener("click", function () {
           // 构建目标 URL，将参数添加到查询字符串中
-          const targetUrl = `../chart.html?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
+          const targetUrl = `https://guapi.pythonanywhere.com/sschart?ut=${item[0].ut}&lon=${lon}&lat=${lat}`;
 
           // 执行页面跳转
           window.location.href = targetUrl;
