@@ -145,8 +145,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.x = -38439.9; //distance 384399 km
 camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-// renderer.render(scene, camera);
+const controls = new OrbitControls(camera, renderer.domElement);
 // Show loading message or indicator
 const loadingMessage = document.createElement("div");
 loadingMessage.style.position = "absolute";
@@ -240,6 +239,7 @@ function updateOneframe(timeCal) {
 
     dist.innerHTML = libration.dist_km.toFixed(1);
     camera.position.x = -libration.dist_km / 10;
+    controls.update();
     updateFromLibration(
       libration.elon,
       libration.elat,
