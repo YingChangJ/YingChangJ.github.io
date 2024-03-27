@@ -155,14 +155,29 @@ loadingMessage.style.left = "50%";
 loadingMessage.textContent = "Loading...";
 document.body.appendChild(loadingMessage);
 let model;
-// const textureLoader = new THREE.TextureLoader();
-// const displacement = textureLoader.load("./javascript/displacement.jpg");
+const textureLoader = new THREE.TextureLoader();
+const displacement = textureLoader.load("./javascript/ldem_4.tif");
 const loader = new GLTFLoader();
 loader.load(
   "Moon_1_3474.glb", //[-500,500]
   function (gltf) {
     model = gltf.scene;
+
     scene.add(model);
+    // 遍历模型的子对象（可能包含多个Mesh）
+    model.traverse(function (child) {
+      if (child instanceof THREE.Mesh) {
+        // 获取Mesh的材质
+        var material = child.material;
+        material.offset = new THREE.Vector2(0.5, 0.5);
+        // material.wrapX = Three.
+        material.displacementMap = displacement;
+        material.displacementScale = 20;
+        material.bumpMap = displacement;
+        material.bumpScale = 20;
+        console.log(material); // 在控制台输出材质信息
+      }
+    });
     model.scale.set(MOON_RADIUS / 500, MOON_RADIUS / 500, MOON_RADIUS / 500); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
     // Hide loading message or indicator after loading
     document.body.removeChild(loadingMessage);
