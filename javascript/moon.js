@@ -272,3 +272,106 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
 
   renderer.render(scene, camera);
 }
+class App {
+  constructor() {
+    this.renderer, this.sphere, (this.camera = undefined);
+
+    this.init();
+  }
+
+  init() {
+    // scene setup
+    this.scene = new THREE.Scene();
+
+    // light setup
+    // this.pointLight = new THREE.PointLight(0xffffff, 3);
+    // this.pointLight.position.set(-400, 0, 0);
+    // this.pointLight.castShadow = true;
+    this.scene.add(this.pointLight);
+    const light1 = new THREE.AmbientLight(0x404040, 1); // soft white light
+    const light2 = new THREE.DirectionalLight(0x404040, 6); // soft white light
+    this.scene.add(light1);
+    this.scene.add(light2);
+    this.initCamera();
+    this.initRenderer();
+    // this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.createCanvas();
+    this.render();
+    this.initSphere();
+
+    window.addEventListener(
+      "resize",
+      () => {
+        this.onWindowResize();
+      },
+      false
+    );
+  }
+
+  createCanvas() {
+    // canvas conatiner
+    const container = document.querySelector("body");
+
+    // add canvas to dom
+    container.appendChild(this.renderer.domElement);
+  }
+
+  initRenderer() {
+    // WebGL renderer
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+    });
+    this.renderer.setClearColor(0x000000);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  initCamera() {
+    // camera setup
+    this.camera = new THREE.PerspectiveCamera(
+      1.5,
+      window.innerWidth / window.innerHeight,
+      1,
+      4300
+    );
+    this.camera.position.x = -2600;
+    this.camera.lookAt(0, 0, 0);
+  }
+
+  render() {
+    this.renderer.render(this.scene, this.camera);
+    // this.controls.update();
+    if (this.sphere !== undefined) {
+      this.sphere.rotation.z += 0.001;
+    }
+
+    requestAnimationFrame(() => this.render());
+  }
+
+  onWindowResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  initSphere() {
+    var texloader = new THREE.TextureLoader();
+    const displacement = texloader.load("./javascript/displacement.jpg");
+    const texture = texloader.load("./javascript/color.jpg");
+    this.geometry = new THREE.SphereGeometry(17.371, 70, 70);
+    // this.geometry.computeVertexNormals();
+    // this.geometry.computeUVs();
+    this.material = new THREE.MeshStandardMaterial({
+      map: texture,
+      color: 0xb2b2b2,
+      displacementMap: displacement,
+      displacementScale: 0.5,
+      bumpMap: displacement,
+      bumpScale: 0.5,
+      // shininess: 0,
+    });
+    this.sphere = new THREE.Mesh(this.geometry, this.material);
+    this.sphere.rotation.z = 0.5;
+    this.scene.add(this.sphere);
+  }
+}
