@@ -1,5 +1,5 @@
 import * as THREE from "./three/build/three.module.js";
-import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
+// import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
 import * as Astronomy from "./astronomy-engine.js";
 import { DateTime } from "./luxon.js";
 
@@ -22,7 +22,7 @@ const dist = document.getElementById("distance");
 
 let isPlaying = true; // 控制动画是否正在播放
 let includePA = true; //if position angle of axis is included
-let includeShadow = false;
+let includeShadow = true;
 // 按钮点击事件处理函数
 document.getElementById("toggleButton").addEventListener("click", function () {
   isPlaying = !isPlaying; // 切换播放状态
@@ -108,25 +108,25 @@ checkboxHelperSubSun.addEventListener("change", function () {
 });
 
 // // 创建平行光
-const defaultIntensity = 1.2;
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0); // 白色平行光
+const defaultIntensity = 2.5;
+const directionalLight = new THREE.DirectionalLight(0xffffff, defaultIntensity); // 白色平行光
 directionalLight.position.set(-100, 0, 0); // 设置光源的初始位置
 // directionalLight.shadow.bias = -0.0005;
 scene.add(directionalLight);
-const ambientLight = new THREE.AmbientLight(0xffffff, defaultIntensity);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 const checkboxShadow = document.getElementById("shadow");
 // Add an event listener for the "change" event
 checkboxShadow.addEventListener("change", function () {
-  if (checkboxShadow.checked) {
+  if (!checkboxShadow.checked) {
     includeShadow = true;
     // If the checkbox is checked, decrease ambience light, increase directional light
     directionalLight.intensity = defaultIntensity;
-    ambientLight.intensity = 0.5;
+    ambientLight.intensity = 0.2;
   } else {
     // If the checkbox is unchecked, decrease directional light, increase amb light
     directionalLight.intensity = 0;
-    ambientLight.intensity = defaultIntensity;
+    ambientLight.intensity = defaultIntensity / 2;
     includeShadow = false;
   }
   updateOneframe(datetime);
@@ -148,7 +148,7 @@ camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 // renderer.render(scene, camera);
 // Show loading message or indicator
-var loadingMessage = document.createElement("div");
+const loadingMessage = document.createElement("div");
 loadingMessage.style.position = "absolute";
 loadingMessage.style.top = "50%";
 loadingMessage.style.left = "50%";
@@ -160,7 +160,7 @@ texloader.load(
   "./javascript/displacement.jpg",
   function (displacement) {
     texloader.load(
-      "./javascript/checker.png",
+      "./javascript/color.jpg",
       function (img) {
         const geometry = new THREE.SphereGeometry(MOON_RADIUS, 70, 70);
         // Reverse UV mapping
@@ -171,16 +171,16 @@ texloader.load(
         img.wrapT = THREE.RepeatWrapping;
         displacement.wrapS = THREE.RepeatWrapping;
         displacement.wrapT = THREE.RepeatWrapping;
-        // img.repeat = repeat;
+
         // displacement.repeat = repeat;
         const material = new THREE.MeshStandardMaterial({
           map: img,
           color: 0xb2b2b2,
           displacementMap: displacement,
-          displacementScale: 1,
+          displacementScale: 3,
           // flipX: true,
           bumpMap: displacement,
-          bumpScale: 1,
+          bumpScale: 3,
           // shininess: 0,
           // uvScale: {
           //   type: "v2",
@@ -189,10 +189,10 @@ texloader.load(
         });
         // material.offset = offset;
         model = new THREE.Mesh(geometry, material);
-
+        console.log(material);
         scene.add(model);
         document.body.removeChild(loadingMessage);
-        updateOneframe(2460240);
+        animate();
       },
       undefined,
       function (error) {
@@ -225,9 +225,9 @@ function updateOneframe(timeCal) {
     const libration = Astronomy.Libration(time);
     // 每帧旋转一定角度
     // const currentRotation = model.rotation.toArray(); // 将当前欧拉角转换为数组
-    libration.elon = libration.elon + 0.0003401946904021133;
-    libration.elat = libration.elat - 0.022385236696709897;
-
+    libration.elon = libration.elon + 0.00034;
+    libration.elat = libration.elat - 0.0223;
+    libration.sub_sun_lon -= 0.005;
     lon.value = libration.elon.toFixed(3);
     lat.value = libration.elat.toFixed(3);
     let paValue = libration.position_angle_axis;
@@ -290,6 +290,11 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
         subSunVectorWorld.y,
         subSunVectorWorld.z
       );
+      if (sunLon - lon > 90 && sunLon - lon < 270) {
+        subSun.renderOrder = -100;
+      } else {
+        subSun.renderOrder = 100;
+      }
     }
     if (includeShadow) {
       // 输出旋转后的向量
