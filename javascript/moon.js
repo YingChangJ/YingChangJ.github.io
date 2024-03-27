@@ -1,5 +1,6 @@
 import * as THREE from "./three/build/three.module.js";
 import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
+import { OrbitControls } from "./three/examples/jsm/controls/OrbitControls.js";
 import * as Astronomy from "./astronomy-engine.js";
 import { DateTime } from "./luxon.js";
 
@@ -108,9 +109,9 @@ checkboxHelperSubSun.addEventListener("change", function () {
 });
 
 // // 创建平行光
-const defaultIntensity = 5;
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0); // 白色平行光
-directionalLight.position.set(-100, 0, 0); // 设置光源的初始位置
+const defaultIntensity = 11;
+const directionalLight = new THREE.DirectionalLight(0xffffff, 11); // 白色平行光
+directionalLight.position.set(-100, 100, 0); // 设置光源的初始位置
 // directionalLight.shadow.bias = -0.0005;
 scene.add(directionalLight);
 const ambientLight = new THREE.AmbientLight(0xffffff, defaultIntensity);
@@ -145,8 +146,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.x = -38439.9; //distance 384399 km
 camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-// renderer.render(scene, camera);
+const controls = new OrbitControls(camera, renderer.domElement);
 // Show loading message or indicator
 var loadingMessage = document.createElement("div");
 loadingMessage.style.position = "absolute";
@@ -156,38 +156,48 @@ loadingMessage.textContent = "Loading...";
 document.body.appendChild(loadingMessage);
 let model;
 const textureLoader = new THREE.TextureLoader();
-const displacement = textureLoader.load("./javascript/ldem_4.tif");
 const loader = new GLTFLoader();
-loader.load(
-  "Moon_1_3474.glb", //[-500,500]
-  function (gltf) {
-    model = gltf.scene;
+textureLoader.load("./javascript/displacement.jpg", function (displacement) {
+  loader.load(
+    "Moon_1_3474.glb", //[-500,500]
+    function (gltf) {
+      model = gltf.scene;
 
-    scene.add(model);
-    // 遍历模型的子对象（可能包含多个Mesh）
-    model.traverse(function (child) {
-      if (child instanceof THREE.Mesh) {
-        // 获取Mesh的材质
-        var material = child.material;
-        material.offset = new THREE.Vector2(0.5, 0.5);
-        // material.wrapX = Three.
-        material.displacementMap = displacement;
-        material.displacementScale = 20;
-        material.bumpMap = displacement;
-        material.bumpScale = 20;
-        console.log(material); // 在控制台输出材质信息
-      }
-    });
-    model.scale.set(MOON_RADIUS / 500, MOON_RADIUS / 500, MOON_RADIUS / 500); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
-    // Hide loading message or indicator after loading
-    document.body.removeChild(loadingMessage);
-    animate();
-  },
-  undefined,
-  function (error) {
-    console.error(error);
-  }
-);
+      scene.add(model);
+      // 遍历模型的子对象（可能包含多个Mesh）
+      model.traverse(function (child) {
+        if (child instanceof THREE.Mesh) {
+          // 获取Mesh的材质
+          var material = child.material;
+          const offset = new THREE.Vector2(0, 0);
+
+          displacement.offset = offset;
+          displacement.wrapS = THREE.RepeatWrapping;
+          displacement.wrapT = THREE.RepeatWrapping;
+          material.displacementMap = displacement;
+          material.displacementScale = 0.8;
+          material.bumpMap = displacement;
+          material.bumpScale = 0.8;
+          console.log(material); // 在控制台输出材质信息
+        }
+      });
+      model.scale.set(MOON_RADIUS / 500, MOON_RADIUS / 500, MOON_RADIUS / 500); // 你可以根据需要调整缩放比例， moon mean radius 1,737.10 km
+      // Hide loading message or indicator after loading
+      document.body.removeChild(loadingMessage);
+      controls.update();
+      animate();
+      // renderer.render(scene, camera);
+    },
+    undefined,
+    function (error) {
+      console.error(error);
+    }
+  ),
+    undefined,
+    function (error) {
+      console.error(error);
+    };
+});
 
 function animate() {
   if (isPlaying) {
@@ -224,6 +234,7 @@ function updateOneframe(timeCal) {
 
     dist.innerHTML = libration.dist_km.toFixed(1);
     camera.position.x = -libration.dist_km / 10;
+    controls.update();
     updateFromLibration(
       libration.elon,
       libration.elat,
@@ -286,107 +297,4 @@ function updateFromLibration(lon, lat, positionAngle, sunLon, sunLat) {
   }
 
   renderer.render(scene, camera);
-}
-class App {
-  constructor() {
-    this.renderer, this.sphere, (this.camera = undefined);
-
-    this.init();
-  }
-
-  init() {
-    // scene setup
-    this.scene = new THREE.Scene();
-
-    // light setup
-    // this.pointLight = new THREE.PointLight(0xffffff, 3);
-    // this.pointLight.position.set(-400, 0, 0);
-    // this.pointLight.castShadow = true;
-    this.scene.add(this.pointLight);
-    const light1 = new THREE.AmbientLight(0x404040, 1); // soft white light
-    const light2 = new THREE.DirectionalLight(0x404040, 6); // soft white light
-    this.scene.add(light1);
-    this.scene.add(light2);
-    this.initCamera();
-    this.initRenderer();
-    // this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.createCanvas();
-    this.render();
-    this.initSphere();
-
-    window.addEventListener(
-      "resize",
-      () => {
-        this.onWindowResize();
-      },
-      false
-    );
-  }
-
-  createCanvas() {
-    // canvas conatiner
-    const container = document.querySelector("body");
-
-    // add canvas to dom
-    container.appendChild(this.renderer.domElement);
-  }
-
-  initRenderer() {
-    // WebGL renderer
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-    });
-    this.renderer.setClearColor(0x000000);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-  }
-
-  initCamera() {
-    // camera setup
-    this.camera = new THREE.PerspectiveCamera(
-      1.5,
-      window.innerWidth / window.innerHeight,
-      1,
-      4300
-    );
-    this.camera.position.x = -2600;
-    this.camera.lookAt(0, 0, 0);
-  }
-
-  render() {
-    this.renderer.render(this.scene, this.camera);
-    // this.controls.update();
-    if (this.sphere !== undefined) {
-      this.sphere.rotation.z += 0.001;
-    }
-
-    requestAnimationFrame(() => this.render());
-  }
-
-  onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-  }
-
-  initSphere() {
-    var texloader = new THREE.TextureLoader();
-    const displacement = texloader.load("./javascript/displacement.jpg");
-    const texture = texloader.load("./javascript/color.jpg");
-    this.geometry = new THREE.SphereGeometry(17.371, 70, 70);
-    // this.geometry.computeVertexNormals();
-    // this.geometry.computeUVs();
-    this.material = new THREE.MeshStandardMaterial({
-      map: texture,
-      color: 0xb2b2b2,
-      displacementMap: displacement,
-      displacementScale: 0.5,
-      bumpMap: displacement,
-      bumpScale: 0.5,
-      // shininess: 0,
-    });
-    this.sphere = new THREE.Mesh(this.geometry, this.material);
-    this.sphere.rotation.z = 0.5;
-    this.scene.add(this.sphere);
-  }
 }
